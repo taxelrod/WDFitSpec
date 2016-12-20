@@ -1,0 +1,3 @@
+ulyss, spectrum, cmp, NSIMUL=500, FILE_OUT='tuto_chi', SNR=15, /QUIET
+uly_solut_tplot, 'tuto_chi', XAXIS=4, YAXIS=5, XRANGE=[300.,14000.], YRANGE=[-1.2, 0.3], /XLOG
+uly_solut_tplot, 'tuto_chi', XAXIS=7, YAXIS=8, /OVER, LINECOLOR='red'

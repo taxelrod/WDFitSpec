@@ -1,0 +1,152 @@
+dnl Process this file with autoconf to produce a configure script.
+define([AC_CACHE_LOAD], )dnl disable caching for debugging
+define([AC_CACHE_SAVE], )dnl
+
+#=============================================================================#
+# Configuration script for ULYSS                                              #
+# Written by Philippe Prugniel						      #
+#=============================================================================#
+
+#### Initializations ##########################################################
+                                          
+AC_INIT([ULYSS], - , [philippe.prugniel@univ-lyon1.fr]) 
+
+version=`cat VERSION`
+AC_DEFINE_UNQUOTED(ULYSS_VERSION, "$version")
+AC_MSG_RESULT([starting configuration for ULySS version $version])
+AC_SUBST(version)
+
+#                              make sure we are using a recent autoconf version
+AC_PREREQ(2.54)            #           version 2.13 is used since version 7.9.6
+AC_COPYRIGHT([Copyright 2006-2015 Observatoire de Lyon])
+
+AC_CONFIG_SRCDIR([pgm/ulyss.pro])         # do we have the sources ?
+
+# Can we install here?
+test -w VERSION || AC_MSG_ERROR([[
+-------------------------------------------------------------------------------
+ULySS configuration failed : 
+Cannot superseed files in this directory, are you the owner? 
+-------------------------------------------------------------------------------
+]])
+
+
+#                      save the configure option, for eventual re-configuration
+configure_options=$*
+test -z "$configure_options" && configure_options="none"
+AC_MSG_RESULT([with options.. $configure_options])
+
+
+ULYSS_ROOT=`pwd`
+AC_DEFINE_UNQUOTED(ULYSS_ROOT, "$ULYSS_ROOT")
+
+AC_PREFIX_DEFAULT(`pwd`) 
+
+AC_SUBST(ULYSS_ROOT)
+
+AC_PATH_PROG(IDL, idl)
+test -z "$IDL" && AC_MSG_ERROR([[
+-------------------------------------------------------------------------------
+ULYSS: IDL is required
+May it be that idl is not on the current search PATH?
+Check you path environment variable, and alter it if necessary...
+Tips:
+- Use the command 'which idl' or 'locate idl' to find where is idl
+- When you know the path, do: env PATH="${PATH}:<path_to_idl>" ./configure
+-------------------------------------------------------------------------------
+]])
+
+## Note that we may choose between IDL and GDL...
+AC_PATH_PROG(GDL, gdl)
+#if ! test "x$GDL" = "x"; then
+#   AC_MSG_RESULT([wwwGDL is also present!!!])
+#fi
+
+
+#### Test dependences (IDL packages) ##################################
+
+ULYSS_DEP_PATH=
+idl_path=`cd pgm; echo "print, 'idl_path:'+!path & exit" | idl 2> /dev/null | grep "^idl_path:"`
+
+#AC_MSG_CHECKING([checking for IDL dependencies in])
+#AC_MSG_RESULT([$idl_path])
+
+missing=
+having=
+
+for file in `cd $ULYSS_ROOT/dep/; ls *.pro`; do
+    ok=0
+    AC_MSG_CHECKING([checking for $file])
+    save_ifs=$IFS
+    IFS=:
+    for dir in $idl_path; do
+        if ! [test "$dir" = "$ULYSS_ROOT/dep" || test "$dir" = "$ULYSS_ROOT/pgm"]; then
+	   if test -f "$dir/$file"; then
+	          ok=1
+		  break
+           fi
+        fi
+    done
+    IFS=$save_ifs
+    if test $ok -eq 1; then 
+       AC_MSG_RESULT([yes])
+       having="$having $file"
+    else
+       AC_MSG_RESULT([no])
+       missing="$missing $file"
+    fi
+done
+
+if test "$having"; then
+   having="Note that the following files found in your path will not be used: $having."
+fi
+
+if test "$missing"; then
+       AC_MSG_NOTICE([
+-------------------------------------------------------------------------------
+Some IDL programs needed for ULySS are missing: $missing.
+Versions included in ULySS will be used
+-------------------------------------------------------------------------------])
+
+       ULYSS_DEP_PATH="$ULYSS_ROOT/dep:"
+fi
+
+AC_SUBST(ULYSS_DEP_PATH)
+
+#### Test dependences (IDLUTIL IDLASTRO) ##############################
+AC_MSG_CHECKING(gettok)
+result=`echo "aaa=gettok([['a','a']],'a') & print, 1" | idl 2> /dev/null |wc -l`
+test $result -eq 1 &&  AC_MSG_RESULT('yes') || AC_MSG_WARN([[
+-------------------------------------------------------------------------------
+ULYSS: A recent version of IDLASTRO is required.
+Either you do not have IDLASTRO, or your version is too old.
+Some functions, et least GETTOK, are not behaving correctly.
+Tips:
+Install IDLASTRO from http://idlastro.gsfc.nasa.gov/
+-------------------------------------------------------------------------------
+]])
+
+
+#### Output ###########################################################
+
+AC_OUTPUT(pgm/uly_startup.pro)
+rm -f config.status && AC_MSG_RESULT(configure: removing ./config.status)
+rm -f config.log && AC_MSG_RESULT(configure: removing ./config.log)
+AC_MSG_RESULT([configuration successfully excecuted..."])
+
+AC_MSG_RESULT([
+-------------------------------------------------------------------------------
+To use the ULySS package you may either:
+  - Launch IDL as:  idl $ULYSS_ROOT/pgm/uly_startup.pro
+or
+  - Add in your IDL startup file the line:
+  @ $ULYSS_ROOT/pgm/uly_startup.pro
+  and launch IDL normally.
+
+Read the documentation for practical examples and more information
+-------------------------------------------------------------------------------
+])
+
+#######################################################################
+
+

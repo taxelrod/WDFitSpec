@@ -1,0 +1,81 @@
+;+
+; NAME:
+;                 ULY_STARTUP
+; PURPOSE:
+;                 Compile the ULySS programs
+; USAGE:
+;                 @ @ULYSS_ROOT@/uly_start.pro
+; DESCRIPTION:
+;   The IDL setting for ULySS package, that can conveniently be included in
+;   the startup file (pointed to be the environment variable IDL_STARTUP.
+;   Simply add the line: @ @ULYSS_ROOT@/uly_start.pro
+; 
+;   The file uly_startup.pro is automatically created from the file
+;   uly_startup.pro.in by the configuration script when the command
+;   make install is issued from the shell.
+;
+;-
+; CATEGORY:    ULY
+;------------------------------------------------------------------------------
+!path = '@ULYSS_ROOT@/pgm:@ULYSS_DEP_PATH@' + !path
+
+; compile the ULySS sources and the functions referenced there
+;   (note that resolving uly_test and the functions called through 
+;    call_function is sufficient ... we are doing too much here)
+
+resolve_all, /CONT, UNRES=unres, /QUIET, RESOLVE_EITHER= [               $
+;
+;    general purpose (low level, utilities) routines
+	"xrebin", "mregress", "undefine", "tickslog", "bvls_ps",         $
+        "uly_cmp_name", "uly_plot_init", "uly_plot_save",                $
+	"uly_line",                                                      $
+;
+;    SSP routines
+        "uly_ssp_alloc", "uly_ssp_read", "uly_ssp_chck", "uly_ssp_extr", $
+        "uly_ssp_interp", "uly_ssp_write", "uly_ssp",                    $
+;
+;    TGM routines
+        "uly_tgm", "uly_tgm_init", "uly_tgm_eval", "uly_tgm_extr",       $
+;
+;   'lsf' routines
+         "uly_lsf", "uly_lsf_plot", "uly_lsf_smooth",                    $ 
+;
+;   'spect' routines
+         "uly_spect_alloc", "uly_spect_get", "uly_spect_read",           $
+         "uly_spect_logrebin", "uly_spect_linrebin",                     $
+         "uly_spect_losvdconvol", "uly_spect_extract",                   $
+         "uly_spect_plot", "uly_spect_lsfconvol",                        $
+;
+;   'chi2map' routines
+         "uly_chimap_init", "uly_chimap", "uly_chimap_plot",             $ 
+         "uly_chimap_read",                                              $
+;
+;   'solut' routines
+         "uly_solut_swrite", "uly_solut_sread", "uly_solut_splot",       $
+         "uly_solut_twrite", "uly_solut_tread", "uly_solut_tprint",      $
+         "uly_solut_tplot",                                              $
+;
+;   main ULySS routines
+         "uly_fit_init", "uly_fit_lin", "uly_fit", "uly_star",           $
+         "ulyss", "uly_test"                                             $
+      ]
+
+; Mention the unreslved routines (except some obsolete VMS things)
+if n_elements(unres) ne 0  then begin & $
+	un = where(stregex(unres,'EMD$|TRNLOG$|DELLOG$|SETLOG$') ne 0, cnt) & $
+	if cnt ne 0 then printf, -2, 'UNRESOLVED ROUTINES:', unres[un]  & $
+endif
+
+; define ULySS root directory used for test & example programs
+;
+; This is automatically set by the configuration script
+common uly_path, uly_root
+uly_root = '@ULYSS_ROOT@'
+
+;; note that the compiled routines may be saved as:
+;save, /ROUTINES, FILENAME='ulyss.sav'
+;; and then restored as:
+;restore, 'ulyss.sav'
+;; in this way we could avoid to 'compile' every time we start ULySS
+
+;; end -----------------------------------------------------------------------
